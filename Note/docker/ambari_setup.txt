@@ -1,0 +1,134 @@
+https://medium.com/@yuehlunhuang/%E5%AE%89%E8%A3%9D-hortonworks-ambari-2-5-a54d5f22dc5a
+https://docs.hortonworks.com/HDPDocuments/Ambari-2.6.1.5/bk_ambari-installation/content/set_up_the_ambari_server.html
+
+passwd root
+apt-get update
+apt-get install software-properties-common python-software-properties 
+add-apt-repository ppa:webupd8team/java
+apt-get update 
+apt-get install oracle-java8-installer
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle/
+export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/jre/lib/tools.jar:$JRE_HOME/lib:$CLASSPATH 
+export PATH=$JAVA_HOME/bin:$PATH
+
+====
+==ssh==
+master給root密碼
+切換到root帳號
+ssh-keygen
+ls ~/.ssh/
+ id_rsa  
+ id_rsa.pub
+
+切換到slave1，slave2
+給root密碼
+nano /etc/ssh/sshd_config
+ PermitRootLogin without-password
+ change to
+ PermitRootLogin yes
+service ssh restart
+
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+切換到master root帳號
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave1
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave2
+
+====安裝ntp===========
+apt update
+apt install ntp
+
+三台都做nano /etc/ntp.conf
+第一台把下面二行前面#拿掉存檔
+server 127.127.8.1 mode 135 prefer    # Meinberg GPS167 with PPS
+fudge 127.127.8.1 time1 0.0042        # relative to PPS for my hardware
+第二三台
+server 172.23.24.9 prefer(主機ip)
+
+三台都做service ntp start
+第二三台下
+ntpq -p
+做測試
+
+
+ufw disable
+iptables -X
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -P INPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -P OUTPUT ACCEPT
+
+wget -O /etc/apt/sources.list.d/ambari.list http://public-repo-1.hortonworks.com/ambari/ubuntu16/2.x/updates/2.6.1.5/ambari.list
+apt-key adv --recv-keys --keyserver keyserver.ubuntu.com B9733A7A07513CAD
+apt-get update
+apt-cache showpkg ambari-server
+apt-cache showpkg ambari-agent
+apt-cache showpkg ambari-metrics-assembly
+apt-get install ambari-server
+ambari-server setup
+
+Customize user account for ambari-server daemon [y/n] (n)? n
+Checking firewall status...
+Checking JDK...
+[1] Oracle JDK 1.8 + Java Cryptography Extension (JCE) Policy Files 8
+[2] Oracle JDK 1.7 + Java Cryptography Extension (JCE) Policy Files 7
+[3] Custom JDK
+==============================================================================
+Enter choice (1): 3
+WARNING: JDK must be installed on all hosts and JAVA_HOME must be valid on all hosts.
+WARNING: JCE Policy files are required for configuring Kerberos security. If you plan to use Kerberos,please make sure JCE Unlimited Strength Jurisdiction Policy Files are valid on all hosts.
+Path to JAVA_HOME: /usr/lib/jvm/java-8-oracle/
+Validating JDK on Ambari Server...done.
+Checking GPL software agreement...
+GPL License for LZO: https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html
+Enable Ambari Server to download and install GPL Licensed LZO packages [y/n] (n)? y
+Completing setup...
+Configuring database...
+Enter advanced database configuration [y/n] (n)? y
+Configuring database...
+==============================================================================
+Choose one of the following options:
+[1] - PostgreSQL (Embedded)
+[2] - Oracle
+[3] - MySQL / MariaDB
+[4] - PostgreSQL
+[5] - Microsoft SQL Server (Tech Preview)
+[6] - SQL Anywhere
+[7] - BDB
+==============================================================================
+Enter choice (1): 1
+Database admin user (postgres):
+Database name (ambari):
+Postgres schema (ambari):
+Username (ambari):
+
+
+ambari-server start
+
+
+===========Postgres Setup===========
+vi /etc/postgresql/9.5/main/pg_hba.conf
+# TYPE DATABASE USER CIDR-ADDRESS  METHOD
+host  all  all 0.0.0.0/0 md5
+
+===========Hive Setup===========
+mkdir jdbc_lib
+cd jdbc_lib
+wget https://jdbc.postgresql.org/download/postgresql-42.2.1.jar
+
+ambari-server setup --jdbc-db=postgres --jdbc-driver=/root/jdbc_lib/postgresql-42.2.1.jar
+
+sudo -u postgres psql
+CREATE ROLE hive LOGIN PASSWORD 'hive';
+CREATE DATABASE hive OWNER hive ENCODING 'UTF8';
+===========Oozie Setup===========
+sudo -u postgres psql
+CREATE ROLE oozie LOGIN PASSWORD 'oozie';
+CREATE DATABASE oozie OWNER oozie ENCODING 'UTF8';
+
+

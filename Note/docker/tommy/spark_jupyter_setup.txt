@@ -1,0 +1,18 @@
+vi /home/spark/pyspark-dev-env.sh
+
+#!/bin/bash
+export SPARK_HOME=/usr/hdp/current/spark2-client
+export PYTHONPATH=$SPARK_HOME/python/lib/py4j-0.10.4-src.zip:$SPARK_HOME/python/:$PYTHONPATH
+export PYSPARK_PYTHON=python
+
+
+chmod +x /home/spark/pyspark-dev-env.sh
+
+/home/spark# vi ipython.sh
+
+#!/bin/bash
+source pyspark-dev-env.sh
+jupyter notebook --allow-root --ip=0.0.0.0 --no-browser
+
+chmod +x /home/spark/ipython.sh
+./ipython.sh

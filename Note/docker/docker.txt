@@ -1,0 +1,485 @@
+========================安裝DOCKER========================
+sudo apt-get update
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+echo $(lsb_release -cs)
+
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu  xenial  stable"
+
+sudo  apt-get update
+
+sudo  apt-get  install  docker-ce
+
+sudo  usermod  -aG  docker master
+
+sudo  usermod  -aG  docker root
+
+-------------------
+sudo passwd root 
+-------------------
+
+sudo  reboot
+========================Basic========================
+看版本
+docker --version
+
+看docker資訊
+docker info
+
+搜尋網路上的image檔
+docker search busybox
+
+從網路拉下image檔
+docker pull busybox
+
+看本機的image檔有哪些
+docker images
+
+run一個docker
+docker run --name busybox -it busybox /bin/sh
+
+ctl+p & ctl+q退出 原docker繼續執行
+
+看本機的container以及是否在執行
+docker ps -a
+
+已有container，再把它run起來
+docker start mysh
+
+已執行的docker，把它關掉
+docker stop mysh
+
+進入已在背景執行的docker
+docker attach mysh
+
+移除container
+docker rm mysh
+
+移除image
+docker rmi mysh
+
+看image檔的歷史紀錄命令
+docker history myhp
+
+進入docker執行命令
+docker exec -it myuser whoami
+
+container的備份與還原
+docker export mybak > myexport.tar
+cat myexport.tar | docker import - mythree
+
+image的備份與還原
+docker save mytwo > mysave.tar
+docker load < mysave.tar
+
+掛載硬碟
+docker run --name mynginx -v /var/log/nginx/ -it nginx  /bin/bash
+
+========================Network========================
+Docker Network 橋接器
+docker network create <net_name>
+
+docker network create mynet1
+docker network create mynet2
+
+查看Docker Network
+docker network ls
+
+Add Container Docker Network
+docker  network  connect  <net_name>  <container_name>
+
+
+==install vi/vim==
+sudo apt-get install vim
+
+==install ssh==
+sudo apt-get install ssh
+
+==install all by one cmd==
+docker exec -it s01 apt-get install iputils-ping nano net-tools ssh
+
+==edit host/ip==
+sudo vi /etc/hosts
+*add following lines*
+
+172.17.0.2 s01
+172.17.0.3 s02
+172.17.0.4 s03
+
+==Firewall Off==
+ufw disable
+(problems with container)
+
+==Ambari Repository Installation==
+https://cwiki.apache.org/confluence/display/AMBARI/Installation+Guide+for+Ambari+2.6.1
+
+==ssh==
+master給root密碼
+切換到root帳號
+ssh-keygen
+ls ~/.ssh/
+ id_rsa  
+ id_rsa.pub
+
+切換到slave1，slave2
+給root密碼
+nano /etc/ssh/sshd_config
+ PermitRootLogin without-password
+ change to
+ PermitRootLogin yes
+service ssh restart
+
+切換到master root帳號
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave1
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave2
+
+各別ssh一次 因為第一次要打密碼
+ssh登入 用exit離開 不是docker
+
+去slave1 slave2 slave3 nano .bashrc檔
+在最後一段加上
+service ssh start
+
+如果不行的話
+nano /etc/ssh/sshd_config
+#PasswordAuthentication no
+
+==make image==
+
+docker run --name base -it ubuntu:16.04
+passwd root
+apt-get update
+apt-get install software-properties-common python-software-properties 
+add-apt-repository ppa:webupd8team/java
+apt-get update 
+apt-get install oracle-java8-installer
+export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+apt-get update
+apt-get install iputils-ping nano net-tools ssh
+nano /etc/ssh/sshd_config
+PermitRootLogin yes
+
+nano ~/.bashrc
+service ssh stop
+service ssh start
+
+
+==tommy command==
+docker run --hostname=master --add-host ubuntumaster:172.23.24.9 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=master -itd itaipei/base
+docker run --hostname=rm --add-host ubuntumaster:172.23.24.9 --add-host master:172.17.0.2 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=rm -itd itaipei/base
+docker run --hostname=slave1 --add-host ubuntumaster:172.23.24.9 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave2:172.17.0.5 --name=slave1 -itd itaipei/base
+docker run --hostname=slave2 --add-host ubuntumaster:172.23.24.9 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --/base
+
+172.23.24.8 ubuntumaster
+172.17.0.2 master
+172.17.0.3 rm
+172.17.0.4 slave1
+172.17.0.5 slave2
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub master
+ssh-copy-id -i ~/.ssh/id_rsa.pub rm
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave1
+ssh-copy-id -i ~/.ssh/id_rsa.pub slave2
+
+==手動安裝hdfs==
+cd /opt
+wget http://mirrors.sonic.net/apache/hadoop/common/hadoop-2.9.0/hadoop-2.9.0.tar.gz
+tar -zxvf hadoop-2.9.0.tar.gz
+檢視相容性 file /opt/hadoop-2.9.0/lib/native/libhadoop.so.1.0.0
+
+nano /opt/allhadoop.sh
+#/bin/bash
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+export HADOOP_HOME=/opt/hadoop-2.9.0
+export PATH=$PATH:$JAVA_HOME/bin
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+nano ~/.bashrc
+source /opt/allhadoop.sh
+
+source ~/.bashrc
+
+
+一、設定hdfs
+1.設定core-site.xml
+nano /opt/hadoop-2.9.0/etc/hadoop/core-site.xml
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://master:8020</value>
+</property>
+
+2.設定hdfs-site.xml
+nano /opt/hadoop-2.9.0/etc/hadoop/hdfs-site.xml
+<property>
+<name>dfs.replication</name>
+<value>2</value>
+</property>
+<property>
+<name>dfs.namenode.name.dir</name>
+<value>/root/master</value>
+</property>
+<property>
+<name>dfs.permissions.supergroup</name>
+<value>root</value>
+</property>
+--------datanode只設定這些-----------------------
+<property>
+<name>dfs.datanode.data.dir</name>
+<value>/root/dn</value>
+</property>
+-------------------------------
+
+
+3.設定hadoop-env.sh
+nano /opt/hadoop-2.9.0/etc/hadoop/hadoop-env.sh
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle/jre/bin
+export HADOOP_HEAPSIZE=128
+export HADOOP_NAMENODE_INIT_HEAPSIZE="128"
+export HADOOP_CLIENT_OPTS="-Xmx128m $HADOOP_CLIENT_OPTS"
+export HADOOP_LOG_DIR=/tmp
+--------datanode設定還要再加上這些---------------------------
+export HADOOP_DATANODE_OPTS="-Dhadoop.security.logger=ERROR,RFAS $HADOOP_DATANODE_OPTS -client"
+-----------------------------------
+
+
+全部重開
+在nanenode
+hdfs namenode -format
+hadoop-daemon.sh start namenode
+hadoop-daemon.sh start secondarynamenode
+在datanode
+hadoop-daemon.sh start datanode
+
+在各台執行
+hdfs dfsadmin -report
+jps
+
+關掉hdfs
+在nanenode
+hadoop-daemon.sh stop namenode
+hadoop-daemon.sh stop secondarynamenode
+在datanode
+hadoop-daemon.sh stop datanode
+
+
+=====設定yarn=========
+1.設定core-site.xml，hdfs已經設定過了
+nano /opt/hadoop-2.9.0/etc/hadoop/core-site.xml
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://master:8020</value>
+</property>
+
+2.設定yarn-site.xml
+nano /opt/hadoop-2.9.0/etc/hadoop/yarn-site.xml
+<property>
+<name>yarn.resourcemanager.hostname</name>
+<value>rm</value>
+</property>
+------nodemanager再加上這段--------------------
+<property>
+<name>yarn.nodemanager.local-dirs</name>
+<value>/root/yarn</value>
+</property>
+<property>
+<name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+<value>org.apache.hadoop.mapred.ShuffleHandler</value>
+</property>
+<property>
+<name>yarn.nodemanager.aux-services</name>
+<value>mapreduce_shuffle</value>
+</property>
+--------------------------
+
+3.設定yarn-env.sh
+nano /opt/hadoop-2.9.0/etc/hadoop/yarn-env.sh
+JAVA_HEAP_MAX=-Xmx128m
+YARN_HEAPSIZE=128
+export YARN_RESOURCEMANAGER_HEAPSIZE=128
+-----nodemanager再加上這段--------------------------
+export YARN_NODEMANAGER_OPTS="-client"
+-------------------------------
+在# default log directory & file這一行下加上
+export YARN_LOG_DIR=/tmp
+
+4.設定mapred-site.xml(空白檔案)
+nano /opt/hadoop-2.9.0/etc/hadoop/mapred-site.xml
+<?xml version="1.0"?>
+<configuration>
+<property>
+<name>mapreduce.framework.name</name>
+<value>yarn</value>
+</property>
+</configuration>
+
+5.設定mapred-env.sh(nodemanager不用做)
+nano /opt/hadoop-2.9.0/etc/hadoop/mapred-env.sh
+export HADOOP_JOB_HISTORYSERVER_HEAPSIZE=128
+export HADOOP_MAPRED_LOG_DIR="/root/jhslog"
+
+
+在rm上執行(stop為關閉)
+yarn-daemon.sh start resourcemanager
+mr-jobhistory-daemon.sh start historyserver
+
+在nodemanager上執行(stop為關閉)
+yarn-daemon.sh start nodemanager
+
+yarn node all -list
+
+
+====關掉docker防火牆====
+
+sudo nano /etc/default/docker 
+DOCKER_OPTS="--iptables=false"
+service docker restart
+
+====CDH POSTGRESQL====
+==docker port mapping==
+docker run --hostname=s01 --add-host master:X.X.X.X --add-host s02:X.X.X.X --add-host s03:X.X.X.X --name=s01 -itd  -p 7180:7180 -p 8888:8888 ubuntu:16.04
+
+docker run --hostname=master --add-host ubuntumaster:172.23.24.8 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=master -itd -p 80:80 -p 7180:7180 -p 8888:8888 itaipei/base
+docker run --hostname=rm --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=rm -itd itaipei/base
+docker run --hostname=slave1 --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave2:172.17.0.5 --name=slave1 -itd itaipei/base
+docker run --hostname=slave2 --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --name=slave2 -itd itaipei/base
+
+docker run --hostname=master --add-host ubuntumaster:172.23.24.8 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=master -itd itaipei/base
+docker run --hostname=rm --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=rm -itd itaipei/base
+docker run --hostname=slave1 --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave2:172.17.0.5 --name=slave1 -itd itaipei/base
+docker run --hostname=slave2 --add-host ubuntumaster:172.23.24.8 --add-host master:172.17.0.2 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --name=slave2 -itd itaipei/base
+
+
+在主機/opt/downloads/下
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1
+wget https://archive.cloudera.com/cm5/cm/5/cloudera-manager-xenial-cm5.12.2_amd64.tar.gz
+wget https://archive.cloudera.com/cm5/sles/12/x86_64/cm/5.12/RPMS/x86_64/oracle-j2sdk1.7-1.7.0+update67-1.x86_64.rpm
+wget http://archive.cloudera.com/cdh5/parcels/5.12/manifest.json
+
+====安裝postgresql=============
+apt-get update
+apt-get install postgresql postgresql-contrib
+su – postgres
+
+nano /etc/postgresql/9.5/main/pg_hba.conf
+在type下加上
+host    all     all     127.0.0.1/32    md5
+host    all     all     172.17.0.0/24   md5
+
+nano /etc/postgresql/9.5/main/postgresql.conf
+改listen_addresses = '*'
+槓掉shared_buffers=128MB
+改
+shared_buffers = 256MB
+wal_buffers = 8MB
+
+service postgresql start
+service postgresql status
+
+==========Docker Image Ubuntu:16.04 Config===========
+===Solve Postgres Encoding UTF-8 Problem===
+[reference](https://askubuntu.com/questions/99651/apt-get-warning-no-support-for-locale-en-us-utf8)
+===[Method 1]===
+dpkg-reconfigure locales
+`Locales to be generated: 149`
+`Default locale for the system environment: 3`
+===[Method 2]===
+locale-gen zh_TW zh_TW.UTF-8 zh_CN.UTF-8 en_US.UTF-8
+
+service postgresql restart
+=====================================================
+
+sudo -u postgres psql
+CREATE ROLE scm LOGIN PASSWORD 'scm';
+CREATE DATABASE scm OWNER scm ENCODING 'UTF8';
+CREATE ROLE amon LOGIN PASSWORD 'amon';
+CREATE DATABASE amon OWNER amon ENCODING 'UTF8';
+CREATE ROLE hive LOGIN PASSWORD 'hive';
+CREATE DATABASE metastore OWNER hive ENCODING 'UTF8';
+CREATE ROLE sentry LOGIN PASSWORD 'sentry';
+CREATE DATABASE sentry OWNER sentry ENCODING 'UTF8';
+CREATE ROLE oozie LOGIN PASSWORD 'oozie';
+CREATE DATABASE oozie OWNER oozie ENCODING 'UTF8';
+CREATE ROLE hue LOGIN PASSWORD 'hue';
+CREATE DATABASE hue OWNER hue ENCODING 'UTF8';
+最後跑
+ALTER DATABASE Metastore SET standard_conforming_strings = off;
+
+按ctl+d跳出
+
+登入看看
+
+psql -U hive -d metastore -h 127.0.0.1
+
+hive
+按ctl+d跳出
+
+
+====安裝ntp===========
+apt update
+apt install ntp
+
+三台都做nano /etc/ntp.conf
+第一台把下面二行前面#拿掉存檔
+server 127.127.8.1 mode 135 prefer    # Meinberg GPS167 with PPS
+fudge 127.127.8.1 time1 0.0042        # relative to PPS for my hardware
+第二三台
+server 172.23.24.9 prefer(主機ip)
+
+三台都做service ntp start
+第二三台下
+ntpq -p
+做測試
+
+第一台
+cd /opt
+tar xzvf /opt/downloads/cloudera-manager-xenial-cm5.12.2_amd64.tar.gz
+
+/opt/cm-5.12.2/share/cmf/schema/scm_prepare_database.sh postgresql scm scm scm
+
+三台都做
+useradd --system --home=/opt/cm-5.12.2/run/cloudera-scm-server --shell=/bin/false --comment "Cloudera SCM User" cloudera-scm
+
+第一台做
+mkdir /opt/cm-5.12.2/run/cloudera-scm-agent
+chown -R cloudera-scm:cloudera-scm /opt/cm-5.12.2
+chown -R cloudera-scm:cloudera-scm /opt/log4j.log
+
+
+三台都做
+nano /opt/cm-5.12.2/etc/cloudera-scm-agent/config.ini
+找localhost
+改=主機名稱如ubuntumaster
+
+scp -r /opt/cm-5.12.2 root@slave1:/opt/
+scp -r /opt/cm-5.12.2 root@slave2:/opt/
+
+===python====
+docker電腦上裝PYTHON
+apt install python2.7
+
+第一台做
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-server start
+三台都跑
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-agent start
+
+桌機brower連http://172.23.24.9:7180
+
+第一台執行
+cd /opt/cloudera/
+mkdir parcel-repo
+cp /opt/downloads/*parcel* /opt/cloudera/parcel-repo/
+cp /opt/downloads/manifest.json /opt/cloudera/parcel-repo/
+cd /opt/cloudera/parcel-repo/
+ls -l
+mv CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1 CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha
+
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-server restart
+
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle/
+export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/jre/lib/tools.jar:$JRE_HOME/lib:$CLASSPATH 
+export PATH=$JAVA_HOME/bin:$PATH

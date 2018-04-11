@@ -1,0 +1,146 @@
+
+docker run --hostname=master --add-host ubuntumaster:172.23.24.9 --add-host rm:172.17.0.3 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=master -itd -p 80:80 -p 7180:7180 -p 8888:8888 itaipei/base
+docker run --hostname=rm --add-host ubuntumaster:172.23.24.9 --add-host master:172.17.0.2 --add-host slave1:172.17.0.4 --add-host slave2:172.17.0.5 --name=rm -itd itaipei/base
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub master
+ssh-copy-id -i ~/.ssh/id_rsa.pub rm
+
+在主機/opt/all_software_path/下
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1
+wget https://archive.cloudera.com/cm5/cm/5/cloudera-manager-xenial-cm5.12.2_amd64.tar.gz
+wget https://archive.cloudera.com/cm5/sles/12/x86_64/cm/5.12/RPMS/x86_64/oracle-j2sdk1.7-1.7.0+update67-1.x86_64.rpm
+wget http://archive.cloudera.com/cdh5/parcels/5.12/manifest.json
+
+
+mkdir /opt/cloudera-manager 
+mkdir -p /opt/cloudera/parcel-repo 
+mkdir -p /opt/cloudera/parcels 
+mkdir /var/log/cloudera-scm-headlamp 
+mkdir /var/log/cloudera-scm-firehose 
+mkdir /var/log/cloudera-scm-alertpublisher 
+mkdir /var/log/cloudera-scm-eventserver 
+mkdir /var/lib/cloudera-scm-headlamp 
+mkdir /var/lib/cloudera-scm-firehose 
+mkdir /var/lib/cloudera-scm-alertpublisher 
+mkdir /var/lib/cloudera-scm-eventserver 
+mkdir /var/lib/cloudera-scm-server
+
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle/
+export JRE_HOME=/usr/lib/jvm/java-8-oracle/jre
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/jre/lib/tools.jar:$JRE_HOME/lib:/usr/share/java/mysql-connector-java-5.1.41.jar:$CLASSPATH 
+export PATH=$JAVA_HOME/bin:$PATH
+
+cd ..
+在/opt下
+wget http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar
+
+cp /opt/mysql-connector-java-5.1.41.jar /usr/share/java/
+
+apt install ntp
+都做nano /etc/ntp.conf
+第一台把下面二行前面#拿掉存檔
+server 127.127.8.1 mode 135 prefer    # Meinberg GPS167 with PPS
+fudge 127.127.8.1 time1 0.0042        # relative to PPS for my hardware
+第二台
+server 172.17.0.2 prefer(主機ip)
+都做service ntp start
+第二台
+ntpq -p
+
+第一台
+apt install mysql-server 
+apt install mysql-client 
+apt install libmysqlclient-dev
+第二台
+apt install mysql-client 
+apt install libmysqlclient-dev
+
+第一台
+nano /etc/mysql/mysql.conf.d/mysqld.cnf
+#bind-address = 127.0.0.1
+service mysql restart
+mysql -u root -p
+
+
+
+create database hive DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database amon DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database hue DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database sentry DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database oozie DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+
+flush privileges;
+
+
+tar -zxvf /opt/downloads/cloudera-manager*.tar.gz -C /opt/cloudera-manager
+nano /opt/cloudera-manager/cm-5.12.2/etc/cloudera-scm-agent/config.ini 
+#server_host=localhost
+server_host=master
+master_name=master
+
+grep "server_[host|port]" /opt/cloudera-manager/cm-5.12.2/etc/cloudera-scm-agent/config.ini
+
+cp /opt/mysql-connector-java-5.1.41.jar /opt/cloudera-manager/cm-5.12.2/share/cmf/lib/
+
+/opt/cloudera-manager/cm-5.12.2/share/cmf/schema/scm_prepare_database.sh mysql -uroot -p –scm-host scm scm scm
+
+cp /opt/all_software_path/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel* /opt/cloudera/parcel-repo
+
+cp /opt/all_software_path/manifest.json /opt/cloudera/parcel-repo
+
+mv CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1 CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha
+
+
+useradd –system –home=/opt/cloudera-manager/cm-5.12.2/run/cloudera-scm-server –no-create-home –shell=/bin/false –comment "Cloudera SCM User" cloudera-scm
+
+
+useradd --system --home=/opt/cm-5.12.2/run/cloudera-scm-server --shell=/bin/false --comment "Cloudera SCM User" cloudera-scm
+
+chown -R cloudera-scm:cloudera-scm /opt/cloudera-manager 
+chown -R cloudera-scm:cloudera-scm /opt/cloudera 
+chown -R cloudera-scm:cloudera-scm /var/log/cloudera-scm-headlamp 
+chown -R cloudera-scm:cloudera-scm /var/log/cloudera-scm-firehose 
+chown -R cloudera-scm:cloudera-scm /var/log/cloudera-scm-alertpublisher 
+chown -R cloudera-scm:cloudera-scm /var/log/cloudera-scm-eventserver 
+chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-headlamp 
+chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-firehose 
+chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-alertpublisher 
+chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-eventserver 
+chown -R cloudera-scm:cloudera-scm /var/lib/cloudera-scm-server
+
+apt-get install gedit 
+apt-get install ant 
+apt-get install apache2 
+apt-get install bash 
+apt install upstart 
+apt-get install debhelper 
+apt-get install fuse 
+apt-get install gcc 
+apt-get install libfuse2 
+apt-get install libsasl2-modules 
+apt-get install libsasl2-modules-gssapi-mit 
+apt-get install libsqlite3-0 
+apt-get install libssl-dev 
+apt-get install libxslt1.1 
+apt-get install lsb-base 
+apt-get install make 
+apt-get install openssl 
+apt-get install perl 
+apt-get install postgresql-client 
+apt-get install postgresql 
+apt-get install psmisc 
+apt-get install python-dev 
+apt-get install python-mysqldb 
+apt-get install python-psycopg2 
+apt-get install python-setuptools 
+apt-get install rpcbind 
+apt-get install sed 
+apt-get install swig 
+apt-get install zlib1g
+
+apt install gedit ant apache2 bash upstart debhelper fuse gcc libfuse2 libsasl2-modules libsasl2-modules-gssapi-mit libsqlite3-0 libssl-dev libxslt1.1 lsb-base make openssl perl postgresql-client postgresql psmisc python-dev python-mysqldb python-psycopg2 python-setuptools rpcbind sed swig zlib1g
+
+/opt/cloudera-manager/cm-5.12.2/etc/init.d/cloudera-scm-server start 
+/opt/cloudera-manager/cm-5.12.2/etc/init.d/cloudera-scm-agent start

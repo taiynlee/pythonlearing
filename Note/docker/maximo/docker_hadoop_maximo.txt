@@ -1,0 +1,49 @@
+docker run --name=m01 --hostname=m01 --add-host=s01:172.17.0.3 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s01 --hostname=s01 --add-host=m01:172.17.0.2 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s02 --hostname=s02 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s03 --hostname=s03 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.3 --add-host=s03:172.17.0.4 -itd othunderx/ubuntu_basic:16.04
+
+172.17.0.2 m01
+172.17.0.3 s01
+172.17.0.4 s02
+172.17.0.5 s03
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub m01
+ssh-copy-id -i ~/.ssh/id_rsa.pub s01
+ssh-copy-id -i ~/.ssh/id_rsa.pub s02
+ssh-copy-id -i ~/.ssh/id_rsa.pub s03
+
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+export HADOOP_HOME=/opt/hadoop-2.9.0
+export PATH=$PATH:$JAVA_HOME/bin
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+
+<property>
+<name>fs.defaultFS</name>
+<value>hdfs://m01:8020</value>
+</property>
+
+vi /opt/hadoop-2.9.0/etc/hadoop/hadoop-env.sh
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+export HADOOP_HEAPSIZE=128
+export HADOOP_NAMENODE_INIT_HEAPSIZE="128"
+export HADOOP_CLIENT_OPTS="-Xmx128m $HADOOP_CLIENT_OPTS"
+export HADOOP_LOG_DIR=/tmp
+
+vi /opt/hadoop-2.9.0/etc/hadoop/yarn-site.xml
+
+<property>
+<name>yarn.resourcemanager.hostname</name>
+<value>s02</value>
+</property>
+
+vi /opt/hadoop-2.9.0/etc/hadoop/yarn-env.sh
+
+vi /opt/hadoop-2.9.0/etc/hadoop/mapred-site.xml
+
+vi /opt/hadoop-2.9.0/etc/hadoop/mapred-env.sh

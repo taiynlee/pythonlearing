@@ -1,0 +1,7 @@
+sudo apt install docker.io
+
+service docker status
+
+--sudo usermod -aG <group> <user>
+sudo usermod -aG docker master
+--restart is required

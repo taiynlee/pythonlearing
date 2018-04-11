@@ -1,0 +1,71 @@
+docker run --name=m01 --hostname=m01 --add-host=s01:172.17.0.3 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd -p 7180:7180 -p 8888:8888 -p 80:80 othunderx/ubuntu_basic:16.04
+
+docker run --name=s01 --hostname=s01 --add-host=m01:172.17.0.2 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s02 --hostname=s02 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s03 --hostname=s03 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.3 --add-host=s03:172.17.0.4 -itd othunderx/ubuntu_basic:16.04
+
+172.17.0.2 m01
+172.17.0.3 s01
+172.17.0.4 s02
+172.17.0.5 s03
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub m01
+ssh-copy-id -i ~/.ssh/id_rsa.pub s01
+ssh-copy-id -i ~/.ssh/id_rsa.pub s02
+ssh-copy-id -i ~/.ssh/id_rsa.pub s03
+
+cd cm-5.12.2/share/cmf/lib/
+wget http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar
+
+sudo -u postgres CREATE ROLE scm LOGIN PASSWORD 'scm';
+sudo -u postgres CREATE DATABASE scm OWNER scm ENCODING 'UTF8';
+sudo -u postgres CREATE ROLE amon LOGIN PASSWORD 'amon';
+sudo -u postgres CREATE DATABASE amon OWNER amon ENCODING 'UTF8';
+sudo -u postgres CREATE ROLE hive LOGIN PASSWORD 'hive';
+sudo -u postgres CREATE DATABASE metastore OWNER hive ENCODING 'UTF8';
+sudo -u postgres CREATE ROLE sentry LOGIN PASSWORD 'sentry';
+sudo -u postgres CREATE DATABASE sentry OWNER sentry ENCODING 'UTF8';
+sudo -u postgres CREATE ROLE oozie LOGIN PASSWORD 'oozie';
+sudo -u postgres CREATE DATABASE oozie OWNER oozie ENCODING 'UTF8';
+sudo -u postgres CREATE ROLE hue LOGIN PASSWORD 'hue';
+sudo -u postgres CREATE DATABASE hue OWNER hue ENCODING 'UTF8';
+
+**Server & Client Installation**
+apt install mysql-server 
+apt install mysql-client 
+apt install libmysqlclient-dev
+
+**Allowed Remote Server**
+vim /etc/mysql/mysql.conf.d/mysqld.cnf 
+`bind-address = 127.0.0.1`
+service mysql restart
+
+**Create New User For Test**
+create database master;
+grant all on master.* to 'master' identified by 'master';
+
+**Client Test**
+mysql -h m01 -u master -p
+
+
+
+
+Acquire::http::Proxy "http://server:port";
+
+
+**install python module **
+sudo apt-get build-dep python-psycopg2
+sudo apt install python-pip
+pip install --upgrade pip
+pip install psycopg2 
+
+
+docker run --name=m01 --hostname=m01 --add-host=personallab:172.23.24.10 --add-host=s01:172.17.0.3 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s01 --hostname=s01 --add-host=personallab:172.23.24.10 --add-host=m01:172.17.0.2 --add-host=s02:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s02 --hostname=s02 --add-host=personallab:172.23.24.10 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.4 --add-host=s03:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s03 --hostname=s03 --add-host=personallab:172.23.24.10 --add-host=m01:172.17.0.2 --add-host=s01:172.17.0.3 --add-host=s03:172.17.0.4 -itd othunderx/ubuntu_basic:16.04

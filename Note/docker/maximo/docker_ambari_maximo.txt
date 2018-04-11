@@ -1,0 +1,75 @@
+https://medium.com/@yuehlunhuang/%E5%AE%89%E8%A3%9D-hortonworks-ambari-2-5-a54d5f22dc5a
+
+https://docs.hortonworks.com/HDPDocuments/Ambari-2.6.1.5/bk_ambari-installation/content/set_up_the_ambari_server.html
+
+add-apt-repository ppa:webupd8team/java
+apt-get update 
+apt-get install oracle-java8-installer
+
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
+export JRE_HOME=$JAVA_HOME/jre
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib/rt.jar
+export PATH=$PATH:$JAVA_HOME/bin
+
+==========Master Only============
+ssh-keygen
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+=================================
+
+vi /etc/hosts
+172.23.24.14 personallabmaster2
+172.23.24.15 personallabslave01
+
+apt-get install ntp
+vi /etc/ntp.conf
+
+service ntp restart
+
+===========Slave Only============
+ntpq -p
+
+ssh-copy-id -i ~/.ssh/id_rsa.pub personallabslave01
+=================================
+
+sudo ufw disable
+sudo iptables -X
+sudo iptables -t nat -F
+sudo iptables -t nat -X
+sudo iptables -t mangle -F
+sudo iptables -t mangle -X
+sudo iptables -P INPUT ACCEPT
+sudo iptables -P FORWARD ACCEPT
+sudo iptables -P OUTPUT ACCEPT
+
+
+wget -O /etc/apt/sources.list.d/ambari.list http://public-repo-1.hortonworks.com/ambari/ubuntu16/2.x/updates/2.6.1.5/ambari.list
+apt-key adv --recv-keys --keyserver keyserver.ubuntu.com B9733A7A07513CAD
+apt-get update
+
+apt-cache showpkg ambari-server
+apt-cache showpkg ambari-agent
+apt-cache showpkg ambari-metrics-assembly
+
+apt-get install ambari-server
+
+ambari-server setup
+
+===========Postgres Setup===========
+vi /etc/postgresql/9.5/main/pg_hba.conf
+# TYPE DATABASE USER CIDR-ADDRESS  METHOD
+host  all  all 0.0.0.0/0 md5
+
+===========Hive Setup===========
+mkdir jdbc_lib
+cd jdbc_lib
+wget https://jdbc.postgresql.org/download/postgresql-42.2.1.jar
+
+ambari-server setup --jdbc-db=postgres --jdbc-driver=/root/jdbc_lib/postgresql-42.2.1.jar
+
+sudo -u postgres psql
+CREATE ROLE hive LOGIN PASSWORD 'hive';
+CREATE DATABASE hive OWNER hive ENCODING 'UTF8';
+===========Oozie Setup===========
+sudo -u postgres psql
+CREATE ROLE oozie LOGIN PASSWORD 'oozie';
+CREATE DATABASE oozie OWNER oozie ENCODING 'UTF8';

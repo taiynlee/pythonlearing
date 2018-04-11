@@ -1,0 +1,68 @@
+# Build Image
+==============root@conatiner===============
+apt-get install openjdk-8-jdk
+apt-get install software-properties-common python-software-properties 
+apt-get install iputils-ping vim net-tools ssh
+add-apt-repository ppa:webupd8team/java
+apt-get update 
+apt-get install oracle-java8-installer
+
+apt-get update && apt-get install -y sudo && rm -rf /var/lib/apt/lists/*
+
+vi ~/.bashrc
+**如果使用oracle java**
+export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+
+**如果使用openjdk**
+export JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64"
+
+source /etc/profile
+echo $JAVA_HOME
+
+vi /etc/ssh/sshd_config
+PermitRootLogin yes
+
+passwd root
+
+# Setup Cluster
+==============root@vm===============
+ssh-copy-id -i ~/.ssh/id_rsa.pub container
+ssh-keygen -f "/root/.ssh/known_hosts" -R container
+
+vi /etc/hosts
+
+`
+172.17.0.2 m001
+172.17.0.3 s001
+172.17.0.4 s002
+172.17.0.5 s003
+`
+
+ssh-keygen
+ssh-copy-id -i ~/.ssh/id_rsa.pub m001
+ssh-copy-id -i ~/.ssh/id_rsa.pub s001
+ssh-copy-id -i ~/.ssh/id_rsa.pub s002
+ssh-copy-id -i ~/.ssh/id_rsa.pub s003
+
+docker run --name=m001 --hostname=m001 --add-host=s001:172.17.0.3 --add-host=s002:172.17.0.4 --add-host=s003:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s001 --hostname=s001 --add-host=m001:172.17.0.2 --add-host=s002:172.17.0.4 --add-host=s003:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s002 --hostname=s002 --add-host=m001:172.17.0.2 --add-host=s001:172.17.0.4 --add-host=s003:172.17.0.5 -itd othunderx/ubuntu_basic:16.04
+
+docker run --name=s003 --hostname=s003 --add-host=m001:172.17.0.2 --add-host=s001:172.17.0.3 --add-host=s003:172.17.0.4 -itd othunderx/ubuntu_basic:16.04
+
+# Hadoop Setup
+==============root@conatiner===============
+docker run --name=master --hostname=master --add-host=slave1:172.17.0.3 --add-host=slave2:172.17.0.4 -itd -p 50070:50070 othunderx/hadoop:test
+docker run --name=slave1 --hostname=slave1 --add-host=master:172.17.0.2 --add-host=slave2:172.17.0.4 -itd othunderx/hadoop:test
+docker run --name=slave2 --hostname=slave2 --add-host=master:172.17.0.2 --add-host=slave1:172.17.0.3 -itd othunderx/hadoop:test
+
+# Docker Firewall Setup
+vi /etc/default/docker
+DOCKER_OPTS="--iptables=false"
+
+
+docker run --name=s001 --hostname=s001 --add-host=personallabmaster2:172.23.24.14 --add-host=personallabslave01:172.23.24.15 -itd othunderx/ubuntu_basic:16.04
+
+docker-machine ip

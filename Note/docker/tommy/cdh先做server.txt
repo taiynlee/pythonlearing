@@ -1,0 +1,167 @@
+ufw disable
+cd /opt
+mkdir downloads
+在downloads下
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel
+wget http://archive.cloudera.com/cdh5/parcels/5.12/CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1
+wget https://archive.cloudera.com/cm5/cm/5/cloudera-manager-xenial-cm5.12.2_amd64.tar.gz
+wget https://archive.cloudera.com/cm5/sles/12/x86_64/cm/5.12/RPMS/x86_64/oracle-j2sdk1.7-1.7.0+update67-1.x86_64.rpm
+wget http://archive.cloudera.com/cdh5/parcels/5.12/manifest.json
+
+cd /opt
+tar xzvf /opt/downloads/cloudera-manager-xenial-cm5.12.2_amd64.tar.gz
+會產生一個cm-5.12.2的資料夾
+
+===安裝java和python
+apt-get install software-properties-common python-software-properties 
+add-apt-repository ppa:webupd8team/java
+apt-get update 
+apt-get install oracle-java8-installer
+export JAVA_HOME="/usr/lib/jvm/java-8-oracle"
+
+===安裝ntp
+apt update
+apt install ntp
+
+三台都做nano /etc/ntp.conf
+第一台把下面二行前面#拿掉存檔
+server 127.127.8.1 mode 135 prefer    # Meinberg GPS167 with PPS
+fudge 127.127.8.1 time1 0.0042        # relative to PPS for my hardware
+第二三台
+server 172.23.24.9 prefer(主機ip)
+
+三台都做service ntp start
+第二三台下
+ntpq -p
+做測試
+
+============================================
+nano /proc/sys/vm/swappiness
+把60修改為10
+
+
+===安裝mysql===
+第一台
+apt install mysql-server 
+apt install mysql-client 
+apt install libmysqlclient-dev
+第二三台
+apt install mysql-client 
+apt install libmysqlclient-dev
+
+第一台
+nano /etc/mysql/mysql.conf.d/mysqld.cnf
+#bind-address = 127.0.0.1
+service mysql restart
+mysql -u root -p
+create database hive DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database metastore DEFAULT CHARSET utf8 COLLATE utf8_general_ci;
+create database amon DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database hue DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database sentry DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+create database oozie DEFAULT CHARSET utf8 COLLATE utf8_general_ci; 
+flush privileges;
+grant all privileges on *.* to 'root'@'%' identified by 'root' with grant option;
+flush privileges;
+
+create user 'hive'@'%' identified by 'hive';
+grant all on hive.* to 'hive'@'%' identified by 'hive';
+flush privileges;
+grant all on hive.* to 'hive'@'ubuntumaster' identified by 'hive';
+flush privileges;
+
+create user 'oozie'@'%' identified by 'oozie';
+grant all on oozie.* to 'oozie'@'%' identified by 'oozie';
+flush privileges;
+grant all on oozie.* to 'oozie'@'ubuntumaster' identified by 'oozie';
+flush privileges;
+
+create user 'amon'@'%' identified by 'amon';
+grant all on amon.* to 'amon'@'%' identified by 'amon';
+flush privileges;
+grant all on amon.* to 'amon'@'ubuntumaster' identified by 'amon';
+flush privileges;
+
+create user 'hue'@'%' identified by 'hue';
+grant all on hue.* to 'hue'@'%' identified by 'hue';
+flush privileges;
+grant all on hue.* to 'hue'@'ubuntumaster' identified by 'hue';
+flush privileges;
+
+create user 'sentry'@'%' identified by 'sentry';
+grant all on sentry.* to 'sentry'@'%' identified by 'sentry';
+flush privileges;
+grant all on sentry.* to 'sentry'@'ubuntumaster' identified by 'sentry';
+flush privileges;
+
+
+grant all on metastore.* to 'hive'@'%' identified by 'hive';
+flush privileges;
+grant all on metastore.* to 'hive'@'ubuntumaster' identified by 'hive';
+flush privileges;
+
+在/opt下
+wget http://central.maven.org/maven2/mysql/mysql-connector-java/5.1.41/mysql-connector-java-5.1.41.jar
+
+cp /opt/mysql-connector-java-5.1.41.jar /opt/cm-5.12.2/share/cmf/lib/
+
+/opt/cm-5.12.2/share/cmf/schema/scm_prepare_database.sh mysql cm -hlocalhost -uroot -proot --scm-host localhost scm scm scm
+
+
+三台都做
+useradd --system --home=/opt/cm-5.12.2/run/cloudera-scm-server --shell=/bin/false --comment "Cloudera SCM User" cloudera-scm
+
+第一台做
+mkdir /opt/cm-5.12.2/run/cloudera-scm-agent
+chown -R cloudera-scm:cloudera-scm /opt/cm-5.12.2
+chown -R cloudera-scm:cloudera-scm /opt/log4j.log
+
+
+nano /opt/cm-5.12.2/etc/cloudera-scm-agent/config.ini
+找localhost
+改=主機名稱如ubuntumaster
+
+
+第一台執行
+mkdir -p /opt/cloudera/parcel-repo 
+mkdir -p /opt/cloudera/parcels 
+
+
+mv /opt/downloads/*parcel* /opt/cloudera/parcel-repo/
+mv /opt/downloads/manifest.json /opt/cloudera/parcel-repo/
+cd /opt/cloudera/parcel-repo/
+ls -l
+mv CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha1 CDH-5.12.2-1.cdh5.12.2.p0.4-xenial.parcel.sha
+
+
+/opt/cm-5.12.2/share/cmf/schema/scm_prepare_database.sh mysql cm -hubuntumaster -uroot -proot --scm-host ubuntumaster scm scm scm
+
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-server start
+
+三台都跑
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-agent start
+
+
+桌機brower連http://172.23.24.8:7180
+
+hue錯誤
+apt-get install python-libxslt1
+
+hive錯誤
+cp mysql-connector-java-5.1.41.jar /opt/cloudera/parcels/CDH-5.12.2-1.cdh5.12.2.p0.4/lib/hive/lib 
+ooize錯誤
+cp mysql-connector-java-5.1.41.jar /var/lib/oozie
+
+
+============加slave
+scp -r /opt/cm-5.12.2 root@slave1:/opt/
+scp -r /opt/cm-5.12.2 root@slave2:/opt/
+
+============slave ntp
+
+useradd --system --home=/opt/cm-5.12.2/run/cloudera-scm-server --shell=/bin/false --comment "Cloudera SCM User" cloudera-scm
+
+/opt/cm-5.12.2/etc/init.d/cloudera-scm-agent start
+
+============slave java+python
+

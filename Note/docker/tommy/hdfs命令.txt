@@ -1,0 +1,236 @@
+1、?建目?命令
+HDFS有一?默?的工作目?/user/$USER，其中$USER是用?的登?用?名。不?目?不?自?建立，需要mkdir建立它
+命令格式：hadoop fs -mkdir
+如：
+在user目?下?建chen目?
+hadoop fs -mkdir /user/chen
+注意：Hadoop的mkdir命令?自??建父目?，?似于?-p的ＵＮＩＸ命令
+
+２、上?文件命令
+put命令?本地文件系?中复制??或多?源路?到目?文件系?，也支持??准?入??中?取?入并?入目?文件系?。分?本地上?和上?到HDFS中。
+命令格式：hadoop fs -put filename
+如：
+放本地文件系?的一?文件?去
+hadoop fs -put example.txt
+最后一???是句?，相?于放入了默?的工作目?，等价于hadoop fs -put example.txt /user/chen。
+
+3、上?文件到HDFS
+上?文件?，文件首先复制到DataNode上，只有所有的DataNode都成功接收完?据，文件上?才是成功的。
+命令格式：hadoop dfs put filename newfilename
+如：
+通?“-put 文件1 文件2 ”命令?Hadoop目?下的test1文件上?到HDFS上并重命名?test2
+hadoop dfs -put test1 test2
+
+4、列出HDFS上的文件
+采用-ls命令列出HDFS上的文件。在HDFS中未???的-ls命令?有返回任何值，它默?返回HDFS的home目?下
+的?容。在HDFS中，?有?前工作目???一?概念，也?有cmd??的命令。
+命令格式：user@NameNode:hadoop$ bin/hadoop dfs -ls
+如：
+列出HDFS?前目?下的所有文件
+hadoop dfs -ls
+
+5、列出HDFS目?下某?文?的文件
+通?“-ls 文件?名” 命令??HDFS下文件?中的文件
+命令格式：hadoop dfs -ls 文件?名
+如：
+??HDFS中in文件?中的文件
+hadoop dfs -ls in
+通??命令可以查看in文件?中的所有文?文件
+
+6、查看HDFS下某?文件的?容
+通?“-cat 文件名”命令查看HDFS下文件?中某?文件的?容
+命令格式：hadoop$ bin/hadoop dfs -cat 文件名
+如：
+查看HDFS下in 目?中的?容
+hadoop$ bin/hadoop dfs -cat in/*
+通???命令可以查看in文件?中所有文件的?容
+
+7、?HDFS中的文件复制到本地系?中
+通?“-get 文件按1 文件2”命令?HDFS中某目?下的文件复制到本地系?的某文件中，并??文件重新命名。
+命令格式：hadoop dfs -get 文件名 新文件名
+如：
+?HDFS中的in文件复制到本地系?并重命名?IN1
+hadoop dfs -get in IN1
+-get 命令与-put命令一?，既可以操作目?，也可以操作文件
+
+8、?除HDFS下的文?
+通?“-rmr 文件”命令?除HDFS下的文件
+命令格式：hadoop$ bin/hadoop dfs -rmr 文件
+如：
+?除HDFS下的out文?
+hadoop dfs -rmr out
+-rmr ?除文?命令相?于delete的??版本。
+
+9、格式化HDFS
+通?-format命令??HDFS格式化
+命令格式：user@NameNode:hadoop$ bin/hadoop NameNode -format
+
+10、??HDFS
+通??行start-dfs.sh，就可以??HDFS了
+命令格式：user@NameNode:hadoop$ bin/start-dfs.sh
+
+11、??HDFS
+?需要退出HDFS?，通?stop-dfs.sh 就可以??HDFS
+命令格式：user@NameNode:hadoop$ bin/stop-dfs.sh
+
+12、HDFS其他命令
+HDFS的命令?不止?些，?于其他操作，可以通?-help commandName 命令列出清?。下面列?一些命令?行?明。
+（1）chgrp改?文件所?的?命令
+chgrp命令的用途是：更改文件或目?的?所有?。
+?法格式：hadoop fs -charg [-R] GROUP URL .....
+使用-R?使改?在目??构下???行。命令的使用者必?是文件的所有者或者超?用?。
+
+（2）chmod改?文件的?限
+chmod用于改?文件或目?的???限，??Linux系?管理?最常用的命令之一。
+使用方法：hadoop fs -chmod [-R] ...
+使用-R?使改?在目??构下???行。命令的使用者必?是文件的所有者或者是超?用?
+
+（3）chown改?文件的?有者
+chown命令改?文件的?有者。
+使用方法：hadoop fs -chown [-R]....
+使用-R?使改?在目??构下???行。命令的使用者必?是超?用?。
+
+（4）copyFromLocal命令
+除了限定源路?是一?本地文件外，其他方面和put命令相似。
+使用方法：hadoop fs -copyFromLocal <localsrc> URI
+
+（5）copyToLocal命令
+除了限定目?路?是一?本地文件外，其他方面和get命令?似。
+使用方法：hadoop fs -copyToLocal {-ignorecrc} {-crc} URI <localdst>
+
+（6）cp命令
+cp命令是?文件?源路?复制到目?路?。??命令允?有多?源路?，此?目?路?必?是一?目?。
+使用方法：hadoop fs -cp URI [URI....] <dest>
+如：
+hadoop fs -cp /user/hadoop/file1  /user/hadoop/file2
+hadoop fs -cp /user/hadoop/file1  /user/hadoop/file2  /user/hadoop/dir
+返回值
+成功返回0 ，失?返回-1
+
+（7）du命令
+du命令?示目?中所有文件的大小，或者?只指定一?文件?，?示此文件的大小
+使用方法：hadoop fs -du URI [URI........]
+如：
+hadoop fs -du /user/hadoop/dir1   /user/hadoop/file1   hdfs://host:port/user/hadoop/dir1
+返回值
+成功返回0，失?返回-1
+
+（8）dus命令
+dus是?示文件大小的命令。
+使用方法：hadoop fs -dus <args>
+
+（9）expunge命令
+expunge是清空回收站的命令
+使用方法：hadoop fs -expunge
+
+（10）get命令
+get是复制文件到本地文件系?的命令
+使用方法：hadoop fs -get [-ignorecrc] [-crc] <localdst>
+可用-ignorecrc??复制CRC校?失?的文件：使用-CRC??复制文件以及CRC信息。
+如：
+hadoop fs -get /user/hadoop/file localfile
+hadoop fs -get hdfs://host:port /user/hadoop/file localfile
+返回值
+成功返回0，失?返回-1
+
+（11）getmerge命令
+getmerge命令用于接受一?源目?和一?目?文件作??入，并且?源目?中所有的文件?接成本地目?文件。
+使用方法：hadoop fs -getmerge <src> <localdst> [addnl]
+???明：addl是可?的，用于指定在每?文件?尾添加一??行符。
+
+（12）ls命令
+ls命令查看?前目?下的信息
+使用方法：hadoop fs -ls <args>
+如果是文件，?按照如下格式返回文件信息：
+文件名 <副本?>文件大小 修改日期 修改?? ?限 用?ID ?ID
+如果是目?，?返回它直接子文件的一?列表，就像在UNIX中一?。目?返回i?表的信息如下：
+目?名<dir>修改日期 修改?? ?限 用?ID ?ID
+如：
+hadoop fs -ls /user/hadoop/file1 /user/hadoop/file2 
+返回值
+成功返回0，失?返回-1
+
+（13）lsr命令
+lsr命令是-ls命令的??版，?似于UNIX中的ls-r。
+使用方法：hadoop fs -lsr <args>
+
+（14）movefromLocal命令
+movefromLocal命令?出一?not implemented信息。
+使用方法：dfs -moveFromLocal <src> <dst>
+
+（15）mv命令
+?文件?源路?移?到目?路?。??命令允?有多?源路?，此?目?路?必?是一?目?
+使用方法：hadoop fs -mv URI [URI.....] <dest>
+?注：不允?在不同的文件系??移?文件。
+如：
+hadoop fs -mv /user/hadoop/file1 /user/local/hadoop/file2
+返回值
+成功返回0，失?返回-1
+
+（16）put 命令
+put命令?本地文件系?中复制??或多?源路?到目?文件系?，也支持??准?入中?取?入?入目?文件系?
+使用方法：hadoop fs -put <localsrc> .... <dst>
+如：
+hadoop fs -put localfile /user/hadoop/hadoopfile
+
+（17）rm命令
+rm命令?除指定的文件，只?除非空目?和文件。
+使用方法：hadoop fs -rm URI [URI......]
+??考rmr命令了解???除。
+
+（18）rmr命令
+rmr命令是delete命令的??版本
+使用方法：hadoop fs -rmr URI [URI.......]
+如：
+hadoop fs -rmr /user/hadoop/dir
+hadoop fs -rmr hdfs://host:port/user/hadoop/dir
+返回值
+成功返回0，失?返回-1
+
+（19）setrep命令
+setrep命令可以改?一?文件的副本系?。
+使用方法：hadoop fs -setrep [-R] <path>
+???明：-R ??用于??改?目?下所有文件的副本系?
+如：
+hadoop fs -setrep -w 3 -R  /user/hadoop/dir1
+返回值
+成功返回0，失?返回-1
+
+（20）stat命令
+stat命令用于返回指定路?的??信息
+使用方法：hadoop fs -stat URI [URI......]
+如：
+hadoop fs -stat path
+返回值
+成功返回0，失?返回-1
+
+（21）tail命令
+tail命令?文件尾部1KB的?容?出到stdout。支持-f??，行?和UNIX中一致
+使用方法：hadoop fs -tail [-f] URI
+如：
+hadoop fs -tail pathname
+返回值
+成功返回0，失?返回-1
+
+（22）test命令
+test命令是?查命令，可以?查文件是否存在、文件的大小等。
+使用方法：hadoop fs -test -[ezd] URI
+???明：
+-e：?查文件是否存在，如果存在?返回0。
+-z：?查文件是否是0字?，如果是?返回0
+-d：如果路?是一?目?，?返回1，否?返回0
+如：
+hadoop fs -test -e filename
+
+（23）text命令
+text命令用于?源文件?出?文本格式
+使用方法：hadoop fs -text <src>
+允?的格式是zip和TextRecordInputStream。
+
+（24）touchz 命令
+touchz命令用于?建一?0字?的空文件。
+使用方法： hadoop fs -touchz URI [URI....]
+如：
+hadoop -touchz pathname
+返回值
+成功返回0，失?返回-1 
